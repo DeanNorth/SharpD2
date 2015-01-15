@@ -27,7 +27,7 @@ namespace D2.FileTypes
         public int length;
     }
 
-    public class D2Palette
+    public class DC6File
     {
         private Bitmap current { get; set; }
         private int shift_color { get; set; }
@@ -56,12 +56,28 @@ namespace D2.FileTypes
         /// <param name="byte[] act"></param>
         /// <param name="byte[] color"></param>
         /// <param name="int shift"></param>      
-        public D2Palette(byte[] dc6, byte[] act, byte[] color, int shift)
+        public DC6File(byte[] dc6, byte[] act, byte[] color = null, int shift = 0)
         {
             dc6_file = dc6;
             act_file = act;
             color_file = color;
             shift_color = shift;
+        }
+
+        public int Directions
+        {
+            get
+            {
+                return dc6_header.directions;
+            }
+        }
+
+        public int FramesPerDirections
+        {
+            get
+            {
+                return dc6_header.frames_per_dir;
+            }
         }
 
         /// <summary>
@@ -217,7 +233,7 @@ namespace D2.FileTypes
             }
         }
 
-        List<Image> ConstructBitmaps()
+        public List<Image> ConstructBitmaps()
         {
             var bitmaps = new List<Image>();
             for (int index = 0; index < dc6_frame_headers.Length; index++)

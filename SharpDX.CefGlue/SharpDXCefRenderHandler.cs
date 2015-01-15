@@ -20,6 +20,7 @@ namespace SharpDX.Toolkit.CefGlue
         private GraphicsDevice GraphicsDevice;
 
         private SynchronizationContext synchronization;
+        static object loadLock = new object();
 
         public SharpDX.Toolkit.Graphics.Texture2D Texture
         {

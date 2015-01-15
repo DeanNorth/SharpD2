@@ -13,6 +13,7 @@ namespace D2.Game
     using D2.FileTypes;
     using System.Linq;
     using SharpDX.Toolkit.CefGlue;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Simple Game game using SharpDX.Toolkit.
@@ -59,7 +60,12 @@ namespace D2.Game
         private Area tristram;
 
         private Effect quadEffect;
-        private SharpDXCefBrowser browser;
+        //private SharpDXCefBrowser browser;
+
+        private bool loading = true;
+        private Effect loadingEffect;
+        private Texture2D loadingScreen;
+        private int loadingProgress = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Game" /> class.
@@ -126,6 +132,15 @@ namespace D2.Game
 
         protected override void LoadContent()
         {
+            Diablo2ReaderFactory.Context = System.Threading.SynchronizationContext.Current;
+
+            // The CefBrowser must be created on the UI thread
+            //browser = ToDisposeContent(new SharpDXCefBrowser(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height));
+
+            loadingScreen = Content.Load<Texture2D>(@"data\global\ui\loading\loadingscreen.dc6");
+            loadingEffect = Content.Load<Effect>("LoadingEffect");
+
+           
             // Instantiate a SpriteBatch
             spriteBatch = ToDisposeContent(new SpriteBatch(GraphicsDevice));
 
@@ -150,35 +165,39 @@ namespace D2.Game
             CalculateResize();
 
             texture = Content.Load<Texture2D>("GeneticaMortarlessBlocks");
-
-            level = Content.Load<DS1File>(@"data\global\tiles\act1\town\towne1.ds1");
-
-            cameraPosition = new Vector3(level.Width / 2 * 5, level.Height / 2 * 5, 0);
-
+   
             floorEffect = Content.Load<Effect>("FloorEffect");
-
-
-            foreach (var file in level.files)
-            {
-                //try
-                //{
-                    tiles.Add(Content.Load<DT1Texture>(file.Substring(4).Replace(".tg1", ".dt1")));
-                //}
-                //catch (Exception ex)
-                //{
-                //    tiles.Add(new DT1Texture()); //Texture2D.New(GraphicsDevice, Image.New(new ImageDescription() { ArraySize = 1, Width = 128, Height = 128, Depth = 1, Format = SharpDX.DXGI.Format.B8G8R8A8_UNorm, Dimension = TextureDimension.Texture2D })));
-                //}
-            }
-
-            tristram = new Area(level, tiles);
 
             basicEffect.Texture = texture;
             basicEffect.TextureEnabled = true;
 
             quadEffect = Content.Load<Effect>("QuadEffect");
 
-            browser = ToDisposeContent(new SharpDXCefBrowser(GraphicsDevice, Window.ClientBounds.Width, Window.ClientBounds.Height));
+            Task.Run(() =>
+            {
+                level = Content.Load<DS1File>(@"data\global\tiles\act1\town\townn1.ds1");
+                cameraPosition = new Vector3(level.Width / 2 * 5, level.Height / 2 * 5, 0);
 
+                loadingProgress++;
+
+                foreach (var file in level.files)
+                {
+                    //try
+                    //{
+                        tiles.Add(Content.Load<DT1Texture>(file.Substring(4).Replace(".tg1", ".dt1")));
+                    //}
+                    //catch (Exception ex)
+                    //{
+                    //    tiles.Add(new DT1Texture()); //Texture2D.New(GraphicsDevice, Image.New(new ImageDescription() { ArraySize = 1, Width = 128, Height = 128, Depth = 1, Format = SharpDX.DXGI.Format.B8G8R8A8_UNorm, Dimension = TextureDimension.Texture2D })));
+                    //}
+                        loadingProgress++;
+                }
+
+                tristram = new Area(level, tiles);
+                loadingProgress++;
+
+                loading = false;
+            });
 
             base.LoadContent();
         }
@@ -245,71 +264,80 @@ namespace D2.Game
         {
             base.Update(gameTime);
 
-            if (!loaded || keyboardState.IsKeyPressed(Keys.Enter))
+            if (loading)
             {
-                browser.NavigateTo("http://www.google.co.uk");
-                browser.Focus();
-                loaded = true;
+
             }
-
-
-            
-
-            // Get the current state of the keyboard
-            keyboardState = keyboard.GetState();
-
-            // Get the current state of the mouse
-            mouseState = mouse.GetState();
-
-
-            if (mouseState.WheelDelta != 0)
+            else
             {
-                if(zoom - mouseState.WheelDelta / 2000.0f > 0.001f)
+
+                //if (!loaded || keyboardState.IsKeyPressed(Keys.Enter))
+                //{
+                //    browser.NavigateTo("http://www.google.co.uk");
+                //    browser.Focus();
+                //    loaded = true;
+                //}
+
+
+
+
+                // Get the current state of the keyboard
+                keyboardState = keyboard.GetState();
+
+                // Get the current state of the mouse
+                mouseState = mouse.GetState();
+
+
+                if (mouseState.WheelDelta != 0)
                 {
-                    zoom -= mouseState.WheelDelta / 2000.0f;
-                    CalculateResize();
+                    if (zoom - mouseState.WheelDelta / 2000.0f > 0.001f)
+                    {
+                        zoom -= mouseState.WheelDelta / 2000.0f;
+                        CalculateResize();
+                    }
                 }
+
+                if (mouseState.LeftButton.Pressed)
+                {
+                    mousePressedPosition = new Vector2(mouseState.X, mouseState.Y);
+                    mousePressedCameraPosition = cameraPosition;
+                }
+
+                if (mouseState.LeftButton.Down)
+                {
+                    var diff = new Vector2(mouseState.X, mouseState.Y) - mousePressedPosition;
+
+                    var absDiff = new Vector2(GraphicsDevice.BackBuffer.Width, GraphicsDevice.BackBuffer.Height);
+
+                    float scale = 0.18f;
+
+                    var transdiffX = Vector3.TransformCoordinate(new Vector3((diff * absDiff * zoom * scale).X, 0, (diff * absDiff * zoom * scale).X), basicEffect.World);
+                    var transdiffY = Vector3.TransformCoordinate(new Vector3(0, (diff * absDiff * zoom * (0.45f)).Y, 0), basicEffect.World);
+
+
+                    cameraPosition = mousePressedCameraPosition + transdiffY - transdiffX;
+                }
+
+                if (mouseState.RightButton.Pressed)
+                {
+                    mousePressedPosition = new Vector2(mouseState.X, mouseState.Y);
+                    mousePressedCameraOffset = cameraOffset;
+                }
+
+                if (mouseState.RightButton.Down)
+                {
+                    var diff = mouseState.X - mousePressedPosition.X;
+
+                    var trans = Vector3.TransformCoordinate(cameraOffset, Matrix.RotationZ(diff));
+
+                    cameraOffset = trans;
+
+                    //cameraOffset.Z = mouseState.Y - mousePressedPosition.Y;
+                }
+
+                selectedTile = ScreenToWorld(new Vector2(mouseState.X, mouseState.Y));
+
             }
-
-            if (mouseState.LeftButton.Pressed)
-            {
-                mousePressedPosition = new Vector2(mouseState.X, mouseState.Y);
-                mousePressedCameraPosition = cameraPosition;
-            }
-
-            if (mouseState.LeftButton.Down)
-            {
-                var diff = new Vector2(mouseState.X, mouseState.Y) - mousePressedPosition;
-
-                var absDiff = new Vector2(GraphicsDevice.BackBuffer.Width, GraphicsDevice.BackBuffer.Height);
-
-                float scale = 0.18f;
-
-                var transdiffX = Vector3.TransformCoordinate(new Vector3((diff * absDiff * zoom * scale).X, 0, (diff * absDiff * zoom * scale).X), basicEffect.World);
-                var transdiffY = Vector3.TransformCoordinate(new Vector3(0, (diff * absDiff * zoom * (0.45f)).Y, 0), basicEffect.World);
-
-
-                cameraPosition = mousePressedCameraPosition + transdiffY - transdiffX;
-            }
-
-            if (mouseState.RightButton.Pressed)
-            {
-                mousePressedPosition = new Vector2(mouseState.X, mouseState.Y);
-                mousePressedCameraOffset = cameraOffset;
-            }
-
-            if (mouseState.RightButton.Down)
-            {
-                var diff = mouseState.X - mousePressedPosition.X;
-
-                var trans = Vector3.TransformCoordinate(cameraOffset, Matrix.RotationZ(diff));
-
-                cameraOffset = trans;
-
-                //cameraOffset.Z = mouseState.Y - mousePressedPosition.Y;
-            }
-
-            selectedTile = ScreenToWorld(new Vector2(mouseState.X, mouseState.Y));
         }
 
         protected override void Draw(GameTime gameTime)
@@ -317,61 +345,74 @@ namespace D2.Game
             // Use time in seconds directly
             var time = (float)gameTime.TotalGameTime.TotalSeconds;
 
-            // Clears the screen with the Color.CornflowerBlue
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // ------------------------------------------------------------------------
-            // Draw the some 2d text
-            // ------------------------------------------------------------------------
-            spriteBatch.Begin();
-            var text = new StringBuilder("Zoom").Append(zoom / 0.18f).AppendLine();
-
-            // Display pressed keys
-            var pressedKeys = new List<Keys>(); //keyboardState.GetDownKeys();
-            keyboardState.GetDownKeys(pressedKeys);
-            text.Append("Key Pressed: [");
-            foreach (var key in pressedKeys)
+            if (loading)
             {
-                text.Append(key.ToString());
-                text.Append(" ");
+                GraphicsDevice.Clear(Color.Black);
+                float loadingScale = 0.7f;
+                loadingEffect.Parameters["World"].SetValue(Matrix.Scaling(loadingScreen.Width / (float)Window.ClientBounds.Width * loadingScale, loadingScreen.Height / (float)Window.ClientBounds.Height * loadingScale, 1.0f));
+                loadingEffect.Parameters["Texture"].SetResource(loadingScreen);
+                loadingEffect.Parameters["TileIndex"].SetValue((float)Math.Min(loadingProgress, 10));
+                //GraphicsDevice.Quad.Draw(loadingEffect, false);
+                plane.Draw(loadingEffect);
             }
-            text.Append("]").AppendLine();
+            else
+            {
+                // Clears the screen with the Color.CornflowerBlue
+                GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // Display mouse coordinates and mouse button status
-            text.AppendFormat("Selected: {4},{5}", mouseState.X, mouseState.Y, mouseState.LeftButton, mouseState.RightButton, selectedTile.X, selectedTile.Y).AppendLine();
+                // ------------------------------------------------------------------------
+                // Draw the some 2d text
+                // ------------------------------------------------------------------------
+                spriteBatch.Begin();
+                var text = new StringBuilder("Zoom").Append(zoom / 0.18f).AppendLine();
 
-            spriteBatch.DrawString(arial16Font, text.ToString(), new Vector2(16, 16), Color.White);
-            spriteBatch.End();
+                // Display pressed keys
+                var pressedKeys = new List<Keys>(); //keyboardState.GetDownKeys();
+                keyboardState.GetDownKeys(pressedKeys);
+                text.Append("Key Pressed: [");
+                foreach (var key in pressedKeys)
+                {
+                    text.Append(key.ToString());
+                    text.Append(" ");
+                }
+                text.Append("]").AppendLine();
 
+                // Display mouse coordinates and mouse button status
+                text.AppendFormat("Selected: {4},{5}", mouseState.X, mouseState.Y, mouseState.LeftButton, mouseState.RightButton, selectedTile.X, selectedTile.Y).AppendLine();
 
-            basicEffect.View = Matrix.LookAtLH(cameraPosition + cameraOffset, cameraPosition, Vector3.UnitZ);
-
-            tristram.DrawFloors(GraphicsDevice, basicEffect.View, basicEffect.Projection, floorEffect, plane);
-
-            // Selected Tile
-            basicEffect.TextureEnabled = true;
-            basicEffect.World = Matrix.Translation(selectedTile.X * 5, selectedTile.Y * 5, 0);
-            plane.Draw(basicEffect);
-
-            tristram.DrawWalls(GraphicsDevice, basicEffect.View, basicEffect.Projection, floorEffect, billboard);
-
-            // Test Billboard
-            //basicEffect.World = Matrix.RotationX(MathUtil.DegreesToRadians(90)) * Matrix.RotationZ(MathUtil.DegreesToRadians(-45)) * Matrix.Translation(50, 50, 0);
-            //billboard.Draw(basicEffect);
-
-            GraphicsDevice.SetRasterizerState(GraphicsDevice.RasterizerStates.CullBack);
-            basicEffect.TextureEnabled = false;
-            basicEffect.World = Matrix.Translation(0, 1, 0) * Matrix.RotationX(MathUtil.DegreesToRadians(90));
-            player.Draw(basicEffect);
+                spriteBatch.DrawString(arial16Font, text.ToString(), new Vector2(16, 16), Color.White);
+                spriteBatch.End();
 
 
-            spriteBatch.Begin();
-            spriteBatch.DrawString(arial16Font, text.ToString(), new Vector2(16, 16), Color.White);
-            spriteBatch.End();
+                basicEffect.View = Matrix.LookAtLH(cameraPosition + cameraOffset, cameraPosition, Vector3.UnitZ);
 
-            // Draw the UI
-            quadEffect.Parameters["Texture"].SetResource(browser.Texture);
-            GraphicsDevice.Quad.Draw(quadEffect, true);
+                tristram.DrawFloors(GraphicsDevice, basicEffect.View, basicEffect.Projection, floorEffect, plane);
+
+                // Selected Tile
+                basicEffect.TextureEnabled = true;
+                basicEffect.World = Matrix.Translation(selectedTile.X * 5, selectedTile.Y * 5, 0);
+                plane.Draw(basicEffect);
+
+                tristram.DrawWalls(GraphicsDevice, basicEffect.View, basicEffect.Projection, floorEffect, billboard);
+
+                // Test Billboard
+                //basicEffect.World = Matrix.RotationX(MathUtil.DegreesToRadians(90)) * Matrix.RotationZ(MathUtil.DegreesToRadians(-45)) * Matrix.Translation(50, 50, 0);
+                //billboard.Draw(basicEffect);
+
+                GraphicsDevice.SetRasterizerState(GraphicsDevice.RasterizerStates.CullBack);
+                basicEffect.TextureEnabled = false;
+                basicEffect.World = Matrix.Translation(0, 1, 0) * Matrix.RotationX(MathUtil.DegreesToRadians(90));
+                player.Draw(basicEffect);
+
+
+                spriteBatch.Begin();
+                spriteBatch.DrawString(arial16Font, text.ToString(), new Vector2(16, 16), Color.White);
+                spriteBatch.End();
+
+                // Draw the UI
+                //quadEffect.Parameters["Texture"].SetResource(browser.Texture);
+                //GraphicsDevice.Quad.Draw(quadEffect, true);
+            }
 
             base.Draw(gameTime);
         }
