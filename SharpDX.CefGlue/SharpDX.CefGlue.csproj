@@ -61,7 +61,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Xilium.CefGlue">
-      <HintPath>C:\Users\dean\Documents\Visual Studio 2013\Projects\SharpDX.Toolkit.CefGlue\SharpDX.Toolkit.CefGlue\Resources\Xilium.CefGlue.dll</HintPath>
+      <HintPath>Cef\Xilium.CefGlue.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
