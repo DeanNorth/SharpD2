@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D2.FileTypes", "D2.FileTypes\D2.FileTypes.csproj", "{28B63123-E916-4551-AFF5-347008562C72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D2.Game", "D2.Game\D2.Game.csproj", "{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "D2.UI", "D2.UI\D2.UI.csproj", "{1E479B4E-0669-4FD3-BFFC-F27BE2772785}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpDX.CefGlue", "SharpDX.CefGlue\SharpDX.CefGlue.csproj", "{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrystalMpq", "CrystalMpq\CrystalMpq.csproj", "{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release .NET 3.5|Any CPU = Release .NET 3.5|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{28B63123-E916-4551-AFF5-347008562C72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28B63123-E916-4551-AFF5-347008562C72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28B63123-E916-4551-AFF5-347008562C72}.Release .NET 3.5|Any CPU.ActiveCfg = Release|Any CPU
+		{28B63123-E916-4551-AFF5-347008562C72}.Release .NET 3.5|Any CPU.Build.0 = Release|Any CPU
+		{28B63123-E916-4551-AFF5-347008562C72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28B63123-E916-4551-AFF5-347008562C72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}.Release .NET 3.5|Any CPU.ActiveCfg = Release|Any CPU
+		{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}.Release .NET 3.5|Any CPU.Build.0 = Release|Any CPU
+		{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{814E5406-E387-4CBD-B4DD-69F7A9A5BE9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E479B4E-0669-4FD3-BFFC-F27BE2772785}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E479B4E-0669-4FD3-BFFC-F27BE2772785}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E479B4E-0669-4FD3-BFFC-F27BE2772785}.Release .NET 3.5|Any CPU.ActiveCfg = Release|Any CPU
+		{1E479B4E-0669-4FD3-BFFC-F27BE2772785}.Release .NET 3.5|Any CPU.Build.0 = Release|Any CPU
+		{1E479B4E-0669-4FD3-BFFC-F27BE2772785}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E479B4E-0669-4FD3-BFFC-F27BE2772785}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}.Release .NET 3.5|Any CPU.ActiveCfg = Release|Any CPU
+		{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}.Release .NET 3.5|Any CPU.Build.0 = Release|Any CPU
+		{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AEAFFBC-13CF-435B-8E0B-1B2D1C286728}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}.Release .NET 3.5|Any CPU.ActiveCfg = Release .NET 3.5|Any CPU
+		{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}.Release .NET 3.5|Any CPU.Build.0 = Release .NET 3.5|Any CPU
+		{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5A4A3C8-5F65-4112-B147-31E2AA1A1E9F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
