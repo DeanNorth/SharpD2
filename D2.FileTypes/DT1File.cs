@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -156,92 +157,207 @@ namespace D2.FileTypes
             }
         }
 
+        bool paletteLoaded = false;
         void LoadPalette()
         {
-            for (int i = 0; i < 256; i++)
+            if (!paletteLoaded)
             {
-                Color from_index = Color.FromArgb(255, paletteData[i * 3 + 2], paletteData[i * 3 + 1], paletteData[i * 3]);
-                palette[i] = from_index;
+                for (int i = 0; i < 256; i++)
+                {
+                    Color from_index = Color.FromArgb(255, paletteData[i * 3 + 2], paletteData[i * 3 + 1], paletteData[i * 3]);
+                    palette[i] = from_index;
+                }
+
+                paletteLoaded = true;
             }
         }
 
         public Image GetFloorImage(int tileIndex)
         {
             LoadPalette();
-
-            Bitmap result;
-
             var tileWithIndex = FloorHeaders[tileIndex];
             var tile = tileWithIndex.tile;
 
+            var bmp = GetImage(tileWithIndex.TileIndex);
+
+            return RotateImage(StretchImage(bmp));
+        }
+
+        private Image GetImage(int tileIndex)
+        {
+            var tile = TileHeaders[tileIndex];
+
+            Bitmap bmp;
             if (tile.Width != 0 && tile.Height != 0)
             {
-                result = new Bitmap(Math.Abs(tile.Width), Math.Abs(tile.Height));
-                foreach (var blockHeader in BlockHeaders[tileWithIndex.TileIndex])
+                if (tile.Orientation == 0)
                 {
-                    if (blockHeader.Format == 1) // ISO
+                    bmp = new Bitmap(Math.Abs(tile.Width), Math.Abs(tile.Height));
+                }
+                else
+                {
+                    bmp = new Bitmap(160, 960);
+                }
+
+                BitmapData bitmapData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+                int stride = bitmapData.Stride;
+                unsafe
+                {
+                    int bmpHeight = bmp.Height;
+                    byte* ptr = (byte*)bitmapData.Scan0;
+                    int[] xjump = new int[] { 14, 12, 10, 8, 6, 4, 2, 0, 2, 4, 6, 8, 10, 12, 14 };
+                    int[] nbpix = new int[] { 4, 8, 12, 16, 20, 24, 28, 32, 28, 24, 20, 16, 12, 8, 4 };
+
+                    foreach (var blockHeader in BlockHeaders[tileIndex])
                     {
-                        DrawBlockIsometric(result, blockHeader.X, blockHeader.Y, data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
-                    }
-                    else // RLE
-                    {
-                        if (tile.Orientation == 0)
+                        if (blockHeader.Format == 1) // ISO
                         {
-                            DrawBlockNormal(result, blockHeader.X, Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+                            //DrawBlockIsometric(result, blockHeader.X, blockHeader.Y, data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+
+                            int x, y = 0;
+                            int n;
+                            int x0 = blockHeader.X;
+                            int y0 = blockHeader.Y;
+
+
+                            int length = blockHeader.Length;
+                            int offset = tile.BlockHeadersPointer + blockHeader.Offset;
+
+                            // 3d-isometric subtile is 256 bytes, no more, no less 
+                            if (length == 256)
+                            {
+                                while (length > 0)
+                                {
+                                    x = xjump[y];
+                                    n = nbpix[y];
+                                    length -= n;
+                                    while (n > 0)
+                                    {
+                                        var color = palette[data[offset]];
+                                        //dst.SetPixel(blockHeader.X + x, blockHeader.Y + y, color);
+
+
+                                        ptr[(x0 + x) * 4 + (y0 + y) * stride] = color.B;
+                                        ptr[(x0 + x) * 4 + (y0 + y) * stride + 1] = color.G;
+                                        ptr[(x0 + x) * 4 + (y0 + y) * stride + 2] = color.R;
+                                        ptr[(x0 + x) * 4 + (y0 + y) * stride + 3] = color.A;
+
+                                        offset++;
+                                        x++;
+                                        n--;
+                                    }
+                                    y++;
+                                }
+                            }
+
+
                         }
-                        else
+                        else // RLE
                         {
-                            DrawBlockNormal(result, blockHeader.X, Math.Abs(tile.Height) - Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+                            //DrawBlockNormal(result, blockHeader.X, Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+
+                            int x = 0;
+                            int y = 0;
+                            byte b1, b2;
+
+                            int x0 = blockHeader.X;
+                            int y0 = Math.Abs(blockHeader.Y);
+
+                            if (tile.Orientation != 0)
+                            {
+                                y0 = 960 - Math.Abs(blockHeader.Y);
+                            }
+
+                            int length = blockHeader.Length;
+                            int offset = tile.BlockHeadersPointer + blockHeader.Offset;
+
+                            while (length > 0)
+                            {
+                                b1 = data[offset++];
+                                b2 = data[offset++];
+
+                                length -= 2;
+                                if (b1 > 0 || b2 > 0)
+                                {
+                                    x += b1;
+                                    length -= b2;
+                                    while (b2 > 0)
+                                    {
+                                        if (y0 + y < bmpHeight) // Not sure why this is required
+                                        {
+                                            //dst.SetPixel(x0 + x, y0 + y, palette[data[offset]]);
+
+                                            var color = palette[data[offset]];
+                                            ptr[(x0 + x) * 4 + (y0 + y) * stride] = color.B;
+                                            ptr[(x0 + x) * 4 + (y0 + y) * stride + 1] = color.G;
+                                            ptr[(x0 + x) * 4 + (y0 + y) * stride + 2] = color.R;
+                                            ptr[(x0 + x) * 4 + (y0 + y) * stride + 3] = color.A;
+                                        }
+                                        offset++;
+                                        x++;
+                                        b2--;
+                                    }
+                                }
+                                else
+                                {
+                                    x = 0;
+                                    y++;
+                                }
+                            } 
                         }
                     }
                 }
+                bmp.UnlockBits(bitmapData);
+
             }
             else
             {
-                result = new Bitmap(128, 128);
+                bmp = new Bitmap(128, 128);
             }
-            
 
-            return RotateImage(StretchImage(result));
+            return bmp;
         }
 
         public Image GetWallImage(int tileIndex)
         {
             LoadPalette();
 
-            Bitmap result;
-
             var tileWithIndex = WallHeaders[tileIndex];
-            var tile = tileWithIndex.tile;
+            return GetImage(tileWithIndex.TileIndex);
 
-            if (tile.Width != 0 && tile.Height != 0)
-            {
-                result = new Bitmap(160, 960);
-                foreach (var blockHeader in BlockHeaders[tileWithIndex.TileIndex])
-                {
-                    if (blockHeader.Format == 1) // ISO
-                    {
-                        DrawBlockIsometric(result, blockHeader.X, blockHeader.Y, data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
-                    }
-                    else // RLE
-                    {
-                        if (tile.Orientation == 0)
-                        {
-                            DrawBlockNormal(result, blockHeader.X, Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
-                        }
-                        else
-                        {
-                            DrawBlockNormal(result, blockHeader.X, 960 - Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                result = new Bitmap(160, 960);
-            }
+            //Bitmap result;
 
-            return result;
+            //var tileWithIndex = WallHeaders[tileIndex];
+            //var tile = tileWithIndex.tile;
+
+            //if (tile.Width != 0 && tile.Height != 0)
+            //{
+            //    result = new Bitmap(160, 960);
+            //    foreach (var blockHeader in BlockHeaders[tileWithIndex.TileIndex])
+            //    {
+            //        if (blockHeader.Format == 1) // ISO
+            //        {
+            //            DrawBlockIsometric(result, blockHeader.X, blockHeader.Y, data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+            //        }
+            //        else // RLE
+            //        {
+            //            if (tile.Orientation == 0)
+            //            {
+            //                DrawBlockNormal(result, blockHeader.X, Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+            //            }
+            //            else
+            //            {
+            //                DrawBlockNormal(result, blockHeader.X, 960 - Math.Abs(blockHeader.Y), data, tile.BlockHeadersPointer + blockHeader.Offset, blockHeader.Length);
+            //            }
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    result = new Bitmap(160, 960);
+            //}
+
+            //return result;
         }
 
         public static Image StretchImage(Image img)

@@ -3,9 +3,11 @@ using SharpDX.Toolkit.Content;
 using SharpDX.Toolkit.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,6 +36,22 @@ namespace D2.Game
             }
 
             return type.IsSubclassOf(typeof(Texture)) ? this : null;
+        }
+
+        public static byte[] BitmapToByteArray(System.Drawing.Bitmap bitmap)
+        {
+
+            BitmapData bmpdata = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bitmap.PixelFormat);
+            int numbytes = bmpdata.Stride * bitmap.Height;
+            byte[] bytedata = new byte[numbytes];
+            IntPtr ptr = bmpdata.Scan0;
+
+            Marshal.Copy(ptr, bytedata, 0, numbytes);
+
+            bitmap.UnlockBits(bmpdata);
+
+            return bytedata;
+
         }
 
         public object ReadContent(IContentManager contentManager, ref ContentReaderParameters parameters)
@@ -79,9 +97,11 @@ namespace D2.Game
 
                     for (int i = 0; i < floorCount; i++)
                     {
-                        var ms = new MemoryStream();
-                        dt1Texture.File.GetFloorImage(i).Save(ms, ImageFormat.Bmp);
-                        var data = ms.ToArray().Skip(54).ToArray();
+                        //var ms = new MemoryStream();
+                        //dt1Texture.File.GetFloorImage(i).Save(ms, ImageFormat.Bmp);
+                        //var data = ms.ToArray().Skip(54).ToArray();
+
+                        var data = BitmapToByteArray(dt1Texture.File.GetFloorImage(i) as Bitmap);
 
                         Context.Send(_ =>
                         {
@@ -100,9 +120,11 @@ namespace D2.Game
 
                     for (int i = 0; i < wallCount; i++)
                     {
-                        var ms = new MemoryStream();
-                        dt1Texture.File.GetWallImage(i).Save(ms, ImageFormat.Bmp);
-                        var data = ms.ToArray().Skip(54).ToArray();
+                        //var ms = new MemoryStream();
+                        //dt1Texture.File.GetWallImage(i).Save(ms, ImageFormat.Bmp);
+                        //var data = ms.ToArray().Skip(54).ToArray();
+
+                        var data = BitmapToByteArray(dt1Texture.File.GetWallImage(i) as Bitmap);
 
                         Context.Send(_ =>
                         {
@@ -144,9 +166,11 @@ namespace D2.Game
                 int i = 0;
                 foreach (var frame in frames)
                 {
-                    var ms = new MemoryStream();
-                    frame.Save(ms, ImageFormat.Bmp);
-                    var data = ms.ToArray().Skip(54).ToArray();
+                    //var ms = new MemoryStream();
+                    //frame.Save(ms, ImageFormat.Bmp);
+                    //var data = ms.ToArray().Skip(54).ToArray();
+
+                    var data = BitmapToByteArray(frame as Bitmap);
 
                     Context.Send(_ =>
                     {

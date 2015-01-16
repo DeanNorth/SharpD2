@@ -44,7 +44,7 @@ VSOutputTx VSBasicTx(VSInputTx vin)
 // Pixel shader: texture.
 float4 PSBasicTx(PSInputTx pin) : SV_Target
 {
-	float4 color = SAMPLE_TEXTURE(Texture, float3(pin.TexCoord, TileIndex));
+	float4 color = SAMPLE_TEXTURE(Texture, float3(pin.TexCoord.x, 1.0 - pin.TexCoord.y, TileIndex));
 
 	//float4 diffuseCol = pow(color, 1.0 / 2.2);
 

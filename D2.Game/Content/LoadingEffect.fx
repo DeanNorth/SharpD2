@@ -52,7 +52,7 @@ VSOutputTx VSBasicTx(VSInputTx vin)
 // Pixel shader: texture.
 float4 PSBasicTx(PSInputTx pin) : SV_Target
 {
-	float4 color = Texture.Sample(TextureSampler, float3(pin.TexCoord.x, 1.0 - pin.TexCoord.y, TileIndex));
+	float4 color = Texture.Sample(TextureSampler, float3(pin.TexCoord.x, pin.TexCoord.y, TileIndex));
 	return color;
 }
 

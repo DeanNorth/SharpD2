@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
 namespace D2.FileTypes
@@ -242,13 +243,27 @@ namespace D2.FileTypes
 
                 var b = new Bitmap(dc6_frame_header.width, dc6_frame_header.height);
 
-                for (int y = 0; y < dc6_frame_header.height; y++)
+                BitmapData bitmapData = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+                int stride = bitmapData.Stride;
+                unsafe
                 {
-                    for (int x = 0; x < dc6_frame_header.width; x++)
+                    byte* ptr = (byte*)bitmapData.Scan0;
+
+                    for (int y = 0; y < dc6_frame_header.height; y++)
                     {
-                        b.SetPixel(x, y, palette_shift[dc6_indexed[index][x, y]]);
+                        for (int x = 0; x < dc6_frame_header.width; x++)
+                        {
+                            //b.SetPixel(x, y, palette_shift[dc6_indexed[index][x, y]]);
+
+                            var color = palette_shift[dc6_indexed[index][x, y]];
+                            ptr[x * 4 + y * stride] = color.B;
+                            ptr[x * 4 + y * stride + 1] = color.G;
+                            ptr[x * 4 + y * stride + 2] = color.R;
+                            ptr[x * 4 + y * stride + 3] = color.A;
+                        }
                     }
                 }
+                b.UnlockBits(bitmapData);
 
                 bitmaps.Add(b);
             }
